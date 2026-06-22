@@ -52,7 +52,8 @@ def index():
     stats = {
         "total_ofertas": len(df),
         "empresas_unicas": df["empresa"].nunique(),
-        "ultima_extraccion": df["fecha_scraping"].max()
+        "ultima_extraccion": df["fecha_scraping"].max(),
+        "extracciones": df["fecha_scraping"].nunique()
     }
     return render_template("index.html", stats=stats)
 

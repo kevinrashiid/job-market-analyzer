@@ -1,6 +1,3 @@
-#EXTRAE LAS OFERTAS
-import os
-
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
@@ -9,9 +6,11 @@ from selenium.webdriver.support import expected_conditions as EC
 from webdriver_manager.chrome import ChromeDriverManager
 import sqlite3
 import time
+import os
 
 BASE_URL = "https://www.tecnoempleo.com/busqueda-empleo.php?te=desarrollador&pr=Madrid&pagina={}"
 DB_PATH = "../data/jobs.db"
+
 
 def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
@@ -27,8 +26,21 @@ def init_db():
             fecha_scraping TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Eliminar duplicados existentes antes de crear el índice único
+    cursor.execute("""
+        DELETE FROM ofertas WHERE id NOT IN (
+            SELECT MIN(id) FROM ofertas GROUP BY titulo, empresa
+        )
+    """)
+
+    cursor.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_titulo_empresa
+        ON ofertas (titulo, empresa)
+    """)
     conn.commit()
     conn.close()
+
 
 def get_driver():
     options = webdriver.ChromeOptions()
@@ -86,34 +98,49 @@ def scrape_pagina(driver, pagina):
 def guardar_ofertas(ofertas):
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-    cursor.executemany(
-        "INSERT INTO ofertas (titulo, empresa, ubicacion, tecnologias) VALUES (?, ?, ?, ?)",
-        ofertas
-    )
+    nuevas = 0
+    for oferta in ofertas:
+        try:
+            cursor.execute(
+                "INSERT INTO ofertas (titulo, empresa, ubicacion, tecnologias) VALUES (?, ?, ?, ?)",
+                oferta
+            )
+            nuevas += 1
+        except sqlite3.IntegrityError:
+            # Oferta duplicada, la ignoramos
+            pass
     conn.commit()
     conn.close()
+    return nuevas
 
 
 def main():
     init_db()
     driver = get_driver()
-    total = 0
+    todas_las_ofertas = []
 
     try:
-        for pagina in range(1, 6):  # 5 páginas para empezar
+        for pagina in range(1, 6):
             print(f"Scrapeando página {pagina}...")
             ofertas = scrape_pagina(driver, pagina)
             if not ofertas:
                 print("  Sin resultados, parando.")
                 break
-            guardar_ofertas(ofertas)
-            total += len(ofertas)
-            print(f"  {len(ofertas)} ofertas guardadas.")
-            time.sleep(2)  # pausa para no saturar el servidor
+            todas_las_ofertas.extend(ofertas)
+            print(f"  {len(ofertas)} ofertas encontradas.")
+            time.sleep(2)
     finally:
         driver.quit()
 
-    print(f"\nTotal: {total} ofertas en {DB_PATH}")
+    if todas_las_ofertas:
+        nuevas = guardar_ofertas(todas_las_ofertas)
+        print(f"\nOfertas nuevas añadidas: {nuevas}")
+
+    # Total acumulado en la DB
+    conn = sqlite3.connect(DB_PATH)
+    total = conn.execute("SELECT COUNT(*) FROM ofertas").fetchone()[0]
+    conn.close()
+    print(f"Total acumulado en DB: {total} ofertas")
 
 
 if __name__ == "__main__":
