@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Market Analyzer</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background-color: #0f1117; color: #e0e0e0; }
+        .card { background-color: #1a1d27; border: 1px solid #2a2d3e; border-radius: 12px; }
+        .stat-number { font-size: 2.5rem; font-weight: 700; color: #4f8ef7; }
+        .stat-label { font-size: 0.85rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+        h1 { font-weight: 700; letter-spacing: -1px; }
+        .badge-tech { background-color: #1e3a5f; color: #4f8ef7; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; }
+    </style>
+</head>
+<body>
+<div class="container py-5">
+
+    <!-- Header con botón -->
+    <div class="mb-5 d-flex justify-content-between align-items-start">
+        <div>
+            <h1 class="display-5"> Job Market Analyzer</h1>
+            <p class="text-secondary">Análisis de ofertas de desarrollador en Madrid — Tecnoempleo</p>
+        </div>
+        <div class="text-end">
+            <button id="btnActualizar" class="btn btn-primary px-4" onclick="actualizar()">
+                Actualizar datos
+            </button>
+            <div id="msgActualizar" class="mt-2 small" style="min-height: 20px;"></div>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <div class="stat-number">{{ stats.total_ofertas }}</div>
+                <div class="stat-label">Ofertas analizadas</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <div class="stat-number">{{ stats.empresas_unicas }}</div>
+                <div class="stat-label">Empresas distintas</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-4 text-center">
+                <div class="stat-number" style="font-size: 1.2rem; padding-top: 0.8rem;">{{ stats.ultima_extraccion }}</div>
+                <div class="stat-label">Última extracción</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card p-4">
+                <h5 class="mb-4"> Top tecnologías más pedidas</h5>
+                <canvas id="chartTecnologias"></canvas>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card p-4">
+                <h5 class="mb-4"> Empresas con más ofertas</h5>
+                <canvas id="chartEmpresas"></canvas>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="{{ url_for('static', filename='charts.js') }}"></script>
+</body>
+</html>
